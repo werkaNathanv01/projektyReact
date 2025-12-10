@@ -1,0 +1,156 @@
+import javax.swing.*;
+import java.awt.*;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+
+public class PartyCaloriesTracker extends JFrame {
+
+    private int totalCalories = 0;
+    private JLabel caloriesLabel;
+    private JLabel equivalentLabel;
+    private JProgressBar guiltBar;
+    private DefaultListModel<String> historyModel;
+
+    private class Product {
+        String name;
+        int calories;
+        String emoji;
+        Product(String name, int calories, String emoji) {
+            this.name = name;
+            this.calories = calories;
+            this.emoji = emoji;
+        }
+    }
+
+    private Product[] products = {
+            new Product("Piwo", 150, "🍺"),
+            new Product("Wino", 125, "🍷"),
+            new Product("Shot", 100, "🥃"),
+            new Product("Pizza", 285, "🍕"),
+            new Product("Chipsy", 300, "🥣"),
+            new Product("Orzeszki", 170, "🥜"),
+            new Product("Energy Drink", 110, "🥤"),
+            new Product("Burger", 550, "🍔"),
+            new Product("Hot-dog", 315, "🌭"),
+            new Product("Nachos", 350, "🫓"),
+            new Product("Kebab", 650, "🥙"),
+            new Product("Ciastko", 80, "🍪")
+    };
+
+    public PartyCaloriesTracker() {
+        setTitle("Party Calories Tracker");
+        setSize(600, 700);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+        setResizable(false);
+        getContentPane().setBackground(new Color(255, 200, 220));
+
+        JPanel statsPanel = new JPanel(new GridLayout(2,1));
+        statsPanel.setBackground(new Color(255, 200, 220));
+        caloriesLabel = new JLabel("Całkowite kalorie: 0 kcal", SwingConstants.CENTER);
+        caloriesLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        equivalentLabel = new JLabel("To jak: 0 min biegania", SwingConstants.CENTER);
+        equivalentLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+        statsPanel.add(caloriesLabel);
+        statsPanel.add(equivalentLabel);
+        add(statsPanel, BorderLayout.NORTH);
+
+        JPanel productsPanel = new JPanel(new GridLayout(4, 3, 10, 10));
+        productsPanel.setBackground(new Color(255, 200, 220));
+        productsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        for (Product p : products) {
+            JButton btn = new JButton("<html><center>" + p.emoji + "<br>" + p.name + "<br>" + p.calories + " kcal</center></html>");
+            btn.setPreferredSize(new Dimension(120, 100));
+            btn.setFocusPainted(false);
+            btn.setBackground(Color.WHITE);
+            btn.addActionListener(e -> addCalories(p));
+            productsPanel.add(btn);
+        }
+        add(productsPanel, BorderLayout.CENTER);
+
+        JPanel historyPanel = new JPanel(new BorderLayout());
+        historyPanel.setPreferredSize(new Dimension(180, 0));
+        historyPanel.setBackground(new Color(255, 200, 220));
+        JLabel historyLabel = new JLabel("Historia:", SwingConstants.CENTER);
+        historyModel = new DefaultListModel<>();
+        JList<String> historyList = new JList<>(historyModel);
+        JScrollPane scrollPane = new JScrollPane(historyList);
+        historyPanel.add(historyLabel, BorderLayout.NORTH);
+        historyPanel.add(scrollPane, BorderLayout.CENTER);
+        add(historyPanel, BorderLayout.EAST);
+
+        guiltBar = new JProgressBar(0, 3000);
+        guiltBar.setStringPainted(true);
+        guiltBar.setValue(0);
+        guiltBar.setString("Święty");
+        guiltBar.setForeground(Color.GREEN);
+        add(guiltBar, BorderLayout.SOUTH);
+
+        JPanel controlPanel = new JPanel();
+        controlPanel.setBackground(new Color(255, 200, 220));
+        JButton resetButton = new JButton("Nowa impreza");
+        resetButton.addActionListener(e -> resetParty());
+        JButton reportButton = new JButton("Raport");
+        reportButton.addActionListener(e -> showReport());
+        controlPanel.add(resetButton);
+        controlPanel.add(reportButton);
+        add(controlPanel, BorderLayout.PAGE_END);
+
+        setVisible(true);
+    }
+
+    private void addCalories(Product p) {
+        totalCalories += p.calories;
+        caloriesLabel.setText("Całkowite kalorie: " + totalCalories + " kcal");
+        equivalentLabel.setText("To jak: " + (totalCalories / 10) + " min biegania");
+        String time = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
+        historyModel.addElement(p.name + " (" + p.calories + " kcal) - " + time);
+        updateGuiltBar();
+    }
+
+    private void updateGuiltBar() {
+        guiltBar.setValue(totalCalories);
+        if(totalCalories <= 500) {
+            guiltBar.setString("Święty");
+            guiltBar.setForeground(Color.GREEN);
+        } else if(totalCalories <= 1000) {
+            guiltBar.setString("W normie");
+            guiltBar.setForeground(Color.YELLOW);
+        } else if(totalCalories <= 1500) {
+            guiltBar.setString("Lekka przesada");
+            guiltBar.setForeground(Color.ORANGE);
+        } else if(totalCalories <= 2500) {
+            guiltBar.setString("Jutro dieta");
+            guiltBar.setForeground(Color.RED);
+        } else {
+            guiltBar.setString("Chyba masz problem!");
+            guiltBar.setForeground(new Color(128, 0, 128));
+        }
+        guiltBar.repaint();
+    }
+
+    private void resetParty() {
+        totalCalories = 0;
+        caloriesLabel.setText("Całkowite kalorie: 0 kcal");
+        equivalentLabel.setText("To jak: 0 min biegania");
+        historyModel.clear();
+        guiltBar.setValue(0);
+        guiltBar.setString("Święty");
+        guiltBar.setForeground(Color.GREEN);
+        guiltBar.repaint();
+    }
+
+    private void showReport() {
+        StringBuilder report = new StringBuilder("Podsumowanie imprezy:\n");
+        report.append("Całkowite kalorie: ").append(totalCalories).append(" kcal\n\n");
+        report.append("Szczegóły:\n");
+        for(int i = 0; i < historyModel.size(); i++) {
+            report.append(historyModel.get(i)).append("\n");
+        }
+        JOptionPane.showMessageDialog(this, report.toString(), "Raport", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new PartyCaloriesTracker());
+    }
+}
